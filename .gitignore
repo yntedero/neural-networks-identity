@@ -10,6 +10,7 @@ venv/
 
 # IDE
 .idea/
+.idea
 
 # Models (binary files)
 models/*.pth
