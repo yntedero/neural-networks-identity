@@ -17,7 +17,7 @@ Each task includes 3 experiments with different learning rate strategies (consta
 
 ```bash
 pip install -r requirements.txt
-jupyter notebook neural-identity.ipynb
+jupyter notebook identity-ostapchuk.ipynb
 ```
 
 ## Requirements
