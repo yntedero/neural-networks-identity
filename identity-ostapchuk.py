@@ -3,10 +3,12 @@
 #
 # Autor: Ostapchuk
 
+import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import os
 
 # seed - aby vysledky boli vzdy rovnake
 torch.manual_seed(42)
@@ -17,6 +19,7 @@ print("PyTorch verzia:", torch.__version__)
 # neuronova siet 4-2-4
 # vstup 4 neurony -> skryta vrstva 2 neurony -> vystup 4 neurony
 # sigmoid dava hodnoty medzi 0 a 1
+
 
 class IdentityNet(nn.Module):
     def __init__(self):
@@ -36,9 +39,12 @@ print("Siet pripravena")
 # funkcia na trenovanie siete
 # v kazdej epoche sa nahodne zamiesaju vektory
 # pre kazdy vektor sa spocita chyba (SSE) a upravia vahy
+# vraciam aj historiu chyb - na vykreslenie grafu
+
 
 def train(model, data, epochs, lr, print_every=500):
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    historia = []
 
     for epoch in range(1, epochs + 1):
         poradie = torch.randperm(len(data))
@@ -54,15 +60,19 @@ def train(model, data, epochs, lr, print_every=500):
             chyba.backward()
             optimizer.step()
 
-        if epoch % print_every == 0 or epoch == epochs:
-            print(f"Epocha {epoch}: chyba = {celkova_chyba:.4f}")
+        historia.append(celkova_chyba)
 
-    return celkova_chyba
+        if epoch % print_every == 0 or epoch == epochs:
+            print(f"Epocha {epoch}  Global error  {celkova_chyba:.5f}")
+
+    return celkova_chyba, historia
+
 
 # testovanie siete
 # accuracy = kolko bitov sedi po zaokruhleni vystupu
 # [AI] koncept reliability som nasiel cez AI - meria ci su vystupy
 # jasne (blizko 0 alebo 1) a nie niekde v strede okolo 0.5
+
 
 def test(model, data, epsilon=0.2):
     model.eval()
@@ -70,7 +80,11 @@ def test(model, data, epsilon=0.2):
     celk_acc = 0
     celk_rel = 0
 
-    print("\nVysledky testu:")
+    print("\nTestovanie")
+    print(
+        f"{'Input':<12}{'Output':<12}{'Response':<28}{'Error':<10}{'Accuracy':<12}{'Reliability'}"
+    )
+    print("-" * 84)
 
     with torch.no_grad():
         for x in data:
@@ -90,9 +104,12 @@ def test(model, data, epsilon=0.2):
             if (zaokr == x).all():
                 spravne += 1
 
-            inp = ' '.join([str(int(v)) for v in x])
-            resp = ' '.join([f'{v:.2f}' for v in vystup])
-            print(f"  {inp}  ->  {resp}   chyba={chyba:.3f}  acc={acc:.0f}%")
+            inp = " ".join([str(int(v)) for v in x])
+            out = " ".join([str(int(v)) for v in zaokr])
+            resp = " ".join([f"{v:.2f}" for v in vystup])
+            print(
+                f"{inp:<12}{out:<12}{resp:<28}{chyba:<10.3f}{acc:.0f}%{'':<8}{rel:.0f}%"
+            )
 
     n = len(data)
     print(f"\nSpravne vektory: {spravne}/{n}")
@@ -109,31 +126,28 @@ def test(model, data, epsilon=0.2):
 # ============================================================
 
 # 5 binarnych vektorov - vstup = vystup (identita)
-data_5 = torch.tensor([
-    [1, 1, 0, 0],
-    [0, 0, 1, 1],
-    [1, 0, 1, 0],
-    [0, 1, 0, 1],
-    [0, 0, 0, 0]
-], dtype=torch.float32)
+data_5 = torch.tensor(
+    [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 0, 0]],
+    dtype=torch.float32,
+)
 
 print("Data (5 vektorov):")
 print(data_5)
 
 # Experiment 1.1 - zaklad, lr=0.5, 1000 epoch
-print("=== Experiment 1.1 (lr=0.5) ===\n")
+print("\n=== Experiment 1.1 (lr=0.5, 1000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_1_1 = IdentityNet()
-train(model_1_1, data_5, epochs=1000, lr=0.5, print_every=200)
+_, hist_1_1 = train(model_1_1, data_5, epochs=1000, lr=0.5, print_every=200)
 s_1_1, a_1_1, r_1_1 = test(model_1_1, data_5)
 
 # Experiment 1.2 - vyssie lr=2.0, viac epoch
-print("=== Experiment 1.2 (lr=2.0) ===\n")
+print("\n=== Experiment 1.2 (lr=2.0, 3000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_1_2 = IdentityNet()
-train(model_1_2, data_5, epochs=3000, lr=2.0, print_every=500)
+_, hist_1_2 = train(model_1_2, data_5, epochs=3000, lr=2.0, print_every=500)
 s_1_2, a_1_2, r_1_2 = test(model_1_2, data_5)
 
 # Experiment 1.3 - krokovy learning rate
@@ -141,17 +155,35 @@ s_1_2, a_1_2, r_1_2 = test(model_1_2, data_5)
 # princip: zaciname s velkym lr (rychle ucenie) a postupne
 # ho znizujeme (presnejsie doladenie na konci)
 
-print("=== Experiment 1.3 (krokovy lr) ===\n")
+print("\n=== Experiment 1.3 (krokovy lr) ===\n")
 
 torch.manual_seed(42)
 model_1_3 = IdentityNet()
-print("--- faza 1: lr=2.0 ---")
-train(model_1_3, data_5, epochs=1000, lr=2.0, print_every=500)
-print("\n--- faza 2: lr=0.5 ---")
-train(model_1_3, data_5, epochs=1000, lr=0.5, print_every=500)
-print("\n--- faza 3: lr=0.05 ---")
-train(model_1_3, data_5, epochs=500, lr=0.05, print_every=500)
+hist_1_3 = []
+print("--- faza 1: lr=2.0, 1000 epoch ---")
+_, h = train(model_1_3, data_5, epochs=1000, lr=2.0, print_every=500)
+hist_1_3.extend(h)
+print("\n--- faza 2: lr=0.5, 1000 epoch ---")
+_, h = train(model_1_3, data_5, epochs=1000, lr=0.5, print_every=500)
+hist_1_3.extend(h)
+print("\n--- faza 3: lr=0.05, 500 epoch ---")
+_, h = train(model_1_3, data_5, epochs=500, lr=0.05, print_every=500)
+hist_1_3.extend(h)
 s_1_3, a_1_3, r_1_3 = test(model_1_3, data_5)
+
+# graf chyb - poduloha 1
+plt.figure(figsize=(10, 4))
+plt.plot(hist_1_1, label="Exp 1.1 (lr=0.5)")
+plt.plot(hist_1_2, label="Exp 1.2 (lr=2.0)")
+plt.plot(hist_1_3, label="Exp 1.3 (krokovy lr)")
+plt.xlabel("Epocha")
+plt.ylabel("Global error")
+plt.title("Poduloha 1 - Priebeh chyby")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig("graf_poduloha1.png")
+plt.show()
 
 # porovnanie experimentov - poduloha 1
 print("=" * 50)
@@ -180,38 +212,56 @@ for i in range(16):
 
 data_16 = torch.tensor(data_16, dtype=torch.float32)
 
-print("Data (16 vektorov):")
+print("\nData (16 vektorov):")
 for v in data_16:
     print(f"  [{int(v[0])} {int(v[1])} {int(v[2])} {int(v[3])}]")
 
 # Experiment 2.1 - zaklad, lr=0.5, 5000 epoch
-print("=== Experiment 2.1 (lr=0.5) ===\n")
+print("\n=== Experiment 2.1 (lr=0.5, 5000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_2_1 = IdentityNet()
-train(model_2_1, data_16, epochs=5000, lr=0.5, print_every=1000)
+_, hist_2_1 = train(model_2_1, data_16, epochs=5000, lr=0.5, print_every=1000)
 s_2_1, a_2_1, r_2_1 = test(model_2_1, data_16)
 
 # Experiment 2.2 - lr=2.0, 10000 epoch
-print("=== Experiment 2.2 (lr=2.0) ===\n")
+print("\n=== Experiment 2.2 (lr=2.0, 10000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_2_2 = IdentityNet()
-train(model_2_2, data_16, epochs=10000, lr=2.0, print_every=2000)
+_, hist_2_2 = train(model_2_2, data_16, epochs=10000, lr=2.0, print_every=2000)
 s_2_2, a_2_2, r_2_2 = test(model_2_2, data_16)
 
 # Experiment 2.3 - krokovy lr, rovnaky princip ako v 1.3
-print("=== Experiment 2.3 (krokovy lr) ===\n")
+print("\n=== Experiment 2.3 (krokovy lr) ===\n")
 
 torch.manual_seed(42)
 model_2_3 = IdentityNet()
-print("--- faza 1: lr=2.0 ---")
-train(model_2_3, data_16, epochs=5000, lr=2.0, print_every=2000)
-print("\n--- faza 2: lr=0.5 ---")
-train(model_2_3, data_16, epochs=3000, lr=0.5, print_every=2000)
-print("\n--- faza 3: lr=0.05 ---")
-train(model_2_3, data_16, epochs=2000, lr=0.05, print_every=2000)
+hist_2_3 = []
+print("--- faza 1: lr=2.0, 5000 epoch ---")
+_, h = train(model_2_3, data_16, epochs=5000, lr=2.0, print_every=2000)
+hist_2_3.extend(h)
+print("\n--- faza 2: lr=0.5, 3000 epoch ---")
+_, h = train(model_2_3, data_16, epochs=3000, lr=0.5, print_every=2000)
+hist_2_3.extend(h)
+print("\n--- faza 3: lr=0.05, 2000 epoch ---")
+_, h = train(model_2_3, data_16, epochs=2000, lr=0.05, print_every=2000)
+hist_2_3.extend(h)
 s_2_3, a_2_3, r_2_3 = test(model_2_3, data_16)
+
+# graf chyb - poduloha 2
+plt.figure(figsize=(10, 4))
+plt.plot(hist_2_1, label="Exp 2.1 (lr=0.5)")
+plt.plot(hist_2_2, label="Exp 2.2 (lr=2.0)")
+plt.plot(hist_2_3, label="Exp 2.3 (krokovy lr)")
+plt.xlabel("Epocha")
+plt.ylabel("Global error")
+plt.title("Poduloha 2 - Priebeh chyby")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig("graf_poduloha2.png")
+plt.show()
 
 # porovnanie experimentov - poduloha 2
 print("=" * 50)
@@ -222,15 +272,15 @@ print(f"Exp 2.2 (lr=2.0):    spravne={s_2_2}/16  acc={a_2_2:.1f}%  rel={r_2_2:.1
 print(f"Exp 2.3 (step lr):   spravne={s_2_3}/16  acc={a_2_3:.1f}%  rel={r_2_3:.1f}%")
 
 # ulozenie modelov
-os.makedirs('models', exist_ok=True)
+os.makedirs("models", exist_ok=True)
 
-torch.save(model_1_1.state_dict(), 'models/poduloha1_exp1.pth')
-torch.save(model_1_2.state_dict(), 'models/poduloha1_exp2.pth')
-torch.save(model_1_3.state_dict(), 'models/poduloha1_exp3.pth')
-torch.save(model_2_1.state_dict(), 'models/poduloha2_exp1.pth')
-torch.save(model_2_2.state_dict(), 'models/poduloha2_exp2.pth')
-torch.save(model_2_3.state_dict(), 'models/poduloha2_exp3.pth')
-print("Modely ulozene")
+torch.save(model_1_1.state_dict(), "models/poduloha1_exp1.pth")
+torch.save(model_1_2.state_dict(), "models/poduloha1_exp2.pth")
+torch.save(model_1_3.state_dict(), "models/poduloha1_exp3.pth")
+torch.save(model_2_1.state_dict(), "models/poduloha2_exp1.pth")
+torch.save(model_2_2.state_dict(), "models/poduloha2_exp2.pth")
+torch.save(model_2_3.state_dict(), "models/poduloha2_exp3.pth")
+print("\nModely ulozene do priecinka models/")
 
 # Zhrnutie
 #
