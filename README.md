@@ -25,8 +25,6 @@ identity-ostapchuk/
   identity-ostapchuk.ipynb   # Jupyter notebook
   identity-ostapchuk.py      # Python script
   requirements.txt           # Dependencies
-  Dokumentacia-identita-ostapchuk.docx  # Documentation (Slovak)
-  Uloha1_identita.pdf        # Task assignment
   models/                    # Saved model weights (.pth)
 ```
 

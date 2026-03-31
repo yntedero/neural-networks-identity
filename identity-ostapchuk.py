@@ -65,7 +65,7 @@ def train(model, data, epochs, lr, print_every=500):
         if epoch % print_every == 0 or epoch == epochs:
             print(f"Epocha {epoch}  Global error  {celkova_chyba:.5f}")
 
-    return celkova_chyba, historia
+    return historia
 
 
 # testovanie siete
@@ -139,7 +139,7 @@ print("\n=== Experiment 1.1 (lr=0.5, 1000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_1_1 = IdentityNet()
-_, hist_1_1 = train(model_1_1, data_5, epochs=1000, lr=0.5, print_every=200)
+hist_1_1 = train(model_1_1, data_5, epochs=1000, lr=0.5, print_every=200)
 s_1_1, a_1_1, r_1_1 = test(model_1_1, data_5)
 
 # Experiment 1.2 - vyssie lr=2.0, viac epoch
@@ -147,7 +147,7 @@ print("\n=== Experiment 1.2 (lr=2.0, 3000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_1_2 = IdentityNet()
-_, hist_1_2 = train(model_1_2, data_5, epochs=3000, lr=2.0, print_every=500)
+hist_1_2 = train(model_1_2, data_5, epochs=3000, lr=2.0, print_every=500)
 s_1_2, a_1_2, r_1_2 = test(model_1_2, data_5)
 
 # Experiment 1.3 - krokovy learning rate
@@ -161,13 +161,13 @@ torch.manual_seed(42)
 model_1_3 = IdentityNet()
 hist_1_3 = []
 print("--- faza 1: lr=2.0, 1000 epoch ---")
-_, h = train(model_1_3, data_5, epochs=1000, lr=2.0, print_every=500)
+h = train(model_1_3, data_5, epochs=1000, lr=2.0, print_every=500)
 hist_1_3.extend(h)
 print("\n--- faza 2: lr=0.5, 1000 epoch ---")
-_, h = train(model_1_3, data_5, epochs=1000, lr=0.5, print_every=500)
+h = train(model_1_3, data_5, epochs=1000, lr=0.5, print_every=500)
 hist_1_3.extend(h)
 print("\n--- faza 3: lr=0.05, 500 epoch ---")
-_, h = train(model_1_3, data_5, epochs=500, lr=0.05, print_every=500)
+h = train(model_1_3, data_5, epochs=500, lr=0.05, print_every=500)
 hist_1_3.extend(h)
 s_1_3, a_1_3, r_1_3 = test(model_1_3, data_5)
 
@@ -221,7 +221,7 @@ print("\n=== Experiment 2.1 (lr=0.5, 5000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_2_1 = IdentityNet()
-_, hist_2_1 = train(model_2_1, data_16, epochs=5000, lr=0.5, print_every=1000)
+hist_2_1 = train(model_2_1, data_16, epochs=5000, lr=0.5, print_every=1000)
 s_2_1, a_2_1, r_2_1 = test(model_2_1, data_16)
 
 # Experiment 2.2 - lr=2.0, 10000 epoch
@@ -229,7 +229,7 @@ print("\n=== Experiment 2.2 (lr=2.0, 10000 epoch) ===\n")
 
 torch.manual_seed(42)
 model_2_2 = IdentityNet()
-_, hist_2_2 = train(model_2_2, data_16, epochs=10000, lr=2.0, print_every=2000)
+hist_2_2 = train(model_2_2, data_16, epochs=10000, lr=2.0, print_every=2000)
 s_2_2, a_2_2, r_2_2 = test(model_2_2, data_16)
 
 # Experiment 2.3 - krokovy lr, rovnaky princip ako v 1.3
@@ -239,13 +239,13 @@ torch.manual_seed(42)
 model_2_3 = IdentityNet()
 hist_2_3 = []
 print("--- faza 1: lr=2.0, 5000 epoch ---")
-_, h = train(model_2_3, data_16, epochs=5000, lr=2.0, print_every=2000)
+h = train(model_2_3, data_16, epochs=5000, lr=2.0, print_every=2000)
 hist_2_3.extend(h)
 print("\n--- faza 2: lr=0.5, 3000 epoch ---")
-_, h = train(model_2_3, data_16, epochs=3000, lr=0.5, print_every=2000)
+h = train(model_2_3, data_16, epochs=3000, lr=0.5, print_every=2000)
 hist_2_3.extend(h)
 print("\n--- faza 3: lr=0.05, 2000 epoch ---")
-_, h = train(model_2_3, data_16, epochs=2000, lr=0.05, print_every=2000)
+h = train(model_2_3, data_16, epochs=2000, lr=0.05, print_every=2000)
 hist_2_3.extend(h)
 s_2_3, a_2_3, r_2_3 = test(model_2_3, data_16)
 
