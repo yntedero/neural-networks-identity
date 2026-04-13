@@ -57,7 +57,7 @@ identity-ostapchuk/
 ├── identity-ostapchuk.ipynb   # Jupyter notebook (with discussion)
 ├── identity-ostapchuk.py      # Python script
 ├── requirements.txt           # Dependencies
-└── models/                    # Saved model weights (.pth)
+└── models/                    # Saved model weights (subtask*_exp*.pth)
 ```
 
 ## Getting Started
